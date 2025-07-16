@@ -27,7 +27,7 @@ const INSTRUCTIONS = {
  *       default:
  *         break;
  *    }
- *     ============> SyntaxError: Identifier 'foo' has already been declared
+ *   //  ============> SyntaxError: Identifier 'foo' has already been declared
  * ===========================================================================
  * @argument
  *  그렇다면 어떻게 ? --> 각 case 에서 독립적인 스코프가 필요하다면 case 문을 중괄호({}) 로 감싸면 case 마다 독립적인 스코프를 가질 수 있다.
