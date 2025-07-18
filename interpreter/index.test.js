@@ -107,5 +107,39 @@ describe("Interperter", () => {
         ).toEqual("jump successful");
       });
     });
+
+    describe("and the code includes an invalid JUMP destination", () => {
+      it("throws an error", () => {
+        expect(() =>
+          new InterPreter().runCode([
+            PUSH,
+            99,
+            JUMP,
+            PUSH,
+            0,
+            JUMP,
+            PUSH,
+            "jump successful",
+            STOP,
+          ])
+        ).toThrow("========== Invalid destination > 99 ==========");
+      });
+    });
+
+    describe("and the code includes an invalid PUSH value", () => {
+      it("throws an error", () => {
+        expect(() => new InterPreter().runCode([PUSH, 0, PUSH])).toThrow(
+          "========== The 'PUSH' instruction cannot be last =========="
+        );
+      });
+    });
+
+    describe("and the code includes an infinite loop", () => {
+      it("throws an error", () => {
+        expect(() => new InterPreter().runCode([PUSH, 0, JUMP, STOP])).toThrow(
+          "========== Check for an infinite loop. Execution limit of 10000 exceeded =========="
+        );
+      });
+    });
   });
 });
