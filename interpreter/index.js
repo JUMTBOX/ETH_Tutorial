@@ -83,7 +83,21 @@ class InterPreter {
         );
       }
 
-      const { STOP, PUSH, ADD, SUB, MUL, DIV, JUMP, JUMPI } = INSTRUCTIONS;
+      const {
+        PUSH,
+        ADD,
+        STOP,
+        SUB,
+        MUL,
+        DIV,
+        LT,
+        GT,
+        EQ,
+        AND,
+        OR,
+        JUMP,
+        JUMPI,
+      } = INSTRUCTIONS;
       const operationCode = this.state.code[this.state.programCounter];
 
       try {
@@ -151,28 +165,8 @@ class InterPreter {
 
 module.exports = InterPreter;
 
-// const { PUSH, ADD, STOP, SUB, MUL, DIV, LT, GT, EQ, AND, OR, JUMP, JUMPI } =
-//   INSTRUCTIONS;
-
-// const codeArr = [
-//   [PUSH, 2, PUSH, 3, ADD, STOP],
-//   [PUSH, 2, PUSH, 3, SUB, STOP],
-//   [PUSH, 2, PUSH, 3, MUL, STOP],
-//   [PUSH, 2, PUSH, 3, DIV, STOP],
-//   [PUSH, 2, PUSH, 3, LT, STOP],
-//   [PUSH, 2, PUSH, 3, GT, STOP],
-//   [PUSH, 2, PUSH, 2, EQ, STOP],
-//   [PUSH, 1, PUSH, 0, AND, STOP],
-//   [PUSH, 1, PUSH, 0, OR, STOP],
-//   [PUSH, 6, JUMP, PUSH, 0, JUMP, PUSH, "jump successful", STOP],
-//   [PUSH, 8, PUSH, 1, JUMPI, PUSH, 0, JUMP, PUSH, "jump successful", STOP],
-//   [PUSH, 99, JUMP, PUSH, 0, JUMP, PUSH, "jump successful", STOP],
-//   [PUSH, 8, PUSH],
-//   [PUSH, 0, JUMP, STOP],
-// ];
-
 /** @param {Array<number|string>[]} arr */
-function exec(arr) {
+function logger(arr) {
   arr.forEach((code) => {
     const operatorOrOperand = code.filter((c) => PUSH !== c && STOP !== c);
     const operator = operatorOrOperand.find((c) => c in INSTRUCTIONS);
