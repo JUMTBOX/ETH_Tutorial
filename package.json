@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/JUMTBOX/ETH_Tutorial#readme",
   "dependencies": {
-    "jest": "^30.0.4"
+    "jest": "^30.0.4",
+    "js-sha3": "^0.9.3"
   }
 }
