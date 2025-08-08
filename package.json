@@ -4,6 +4,8 @@
   "description": "",
   "main": "main_1.js",
   "scripts": {
+    "start": "node ./api/index.js",
+    "dev": "nodemon ./api/index.js",
     "test": "jest"
   },
   "repository": {
@@ -19,7 +21,11 @@
   },
   "homepage": "https://github.com/JUMTBOX/ETH_Tutorial#readme",
   "dependencies": {
+    "express": "^5.1.0",
     "jest": "^30.0.4",
     "js-sha3": "^0.9.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

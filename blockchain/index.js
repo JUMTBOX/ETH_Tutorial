@@ -18,7 +18,7 @@ class Blockchain {
           this.chain.push(block);
           return res();
         })
-        .catch((e) => rej(e));
+        .catch(rej);
     });
   }
 }
