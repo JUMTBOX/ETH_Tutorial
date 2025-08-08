@@ -1,15 +1,29 @@
-const { GENESIS_DATA } = require("../config");
+const { GENESIS_DATA, MINE_RATE } = require("../config");
 const { keccakHash } = require("../util/index");
 
 const HASH_LENGTH = 64;
 const MAX_HASH_VALUE = parseInt("f".repeat(HASH_LENGTH), 16);
 const MAX_NONCE_VALUE = 2 ** 64;
 
+/**
+ * @typedef BlockHeader
+ * @property {number|undefined} difficulty
+ * @property {number|undefined} timestamp
+ * @property {number|undefined} number
+ * @property {string|undefined} parentHash
+ * @property {number|undefined} nonce
+ * @property {object|undefined} beneficiary
+ */
+
 class Block {
+  /** @type {BlockHeader} */
+  blockHeaders;
+
+  /** @param {{blockHeaders: BlockHeader}} */
   constructor({ blockHeaders }) {
     this.blockHeaders = blockHeaders;
   }
-  /** @param {{lastBlock:Block}} param1 */
+  /** @param {{lastBlock:Block}} */
   static calculateBlockTargetHash({ lastBlock }) {
     const value = (MAX_HASH_VALUE / lastBlock.blockHeaders.difficulty).toString(
       16
@@ -21,7 +35,22 @@ class Block {
     return "0".repeat(HASH_LENGTH - value.length) + value;
   }
 
-  /** @param {{lastBlock:Block, beneficiary: object}} param1 */
+  /** @param {{lastBlock:Block, timestamp:number }}  */
+  static adjustDifficulty({ lastBlock, timestamp }) {
+    const { difficulty } = lastBlock.blockHeaders;
+
+    if (timestamp - lastBlock.blockHeaders.timestamp > MINE_RATE) {
+      return difficulty - 1;
+    }
+
+    if (difficulty < 1) {
+      return 1;
+    }
+
+    return difficulty + 1;
+  }
+
+  /** @param {{lastBlock:Block, beneficiary: object}} */
   static mineBlock({ lastBlock, beneficiary }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
@@ -31,7 +60,7 @@ class Block {
       truncatedBlockHeaders = {
         parentHash: keccakHash(lastBlock.blockHeaders),
         beneficiary,
-        difficulty: lastBlock.blockHeaders.difficulty + 1,
+        difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
         number: lastBlock.blockHeaders.number + 1,
         timestamp,
       };
@@ -41,12 +70,6 @@ class Block {
 
       underTargetHash = keccakHash(header + nonce);
     } while (underTargetHash > target);
-
-    console.info(
-      "============== underTargetHash ============== \n",
-      underTargetHash
-    );
-    console.info("============== target ============== \n", target);
 
     return new this({
       blockHeaders: { ...truncatedBlockHeaders, nonce },
@@ -59,10 +82,3 @@ class Block {
 }
 
 module.exports = Block;
-
-const block = Block.mineBlock({
-  lastBlock: Block.genesis(),
-  beneficiary: "foo",
-});
-
-console.info("========= Block instanciate result ========= \n", block);
