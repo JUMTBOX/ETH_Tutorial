@@ -9,7 +9,17 @@ class Blockchain {
 
   /** @param {{block: Block}} */
   addBlock({ block }) {
-    this.chain.push(block);
+    return new Promise((res, rej) => {
+      Block.validateBlock({
+        lastBlock: this.chain[this.chain.length - 1],
+        block,
+      })
+        .then(() => {
+          this.chain.push(block);
+          return res();
+        })
+        .catch((e) => rej(e));
+    });
   }
 }
 

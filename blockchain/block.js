@@ -14,7 +14,6 @@ const MAX_NONCE_VALUE = 2 ** 64;
  * @property {number|undefined} nonce
  * @property {object|undefined} beneficiary
  */
-
 class Block {
   /** @type {BlockHeader} */
   blockHeaders;
@@ -78,6 +77,53 @@ class Block {
 
   static genesis() {
     return new this(GENESIS_DATA);
+  }
+
+  /** @param {{lastBlock: Block, block: Block}} */
+  static validateBlock({ lastBlock, block }) {
+    return new Promise((res, rej) => {
+      if (keccakHash(block) === keccakHash(Block.genesis())) {
+        return res();
+      }
+
+      if (
+        keccakHash(lastBlock.blockHeaders) !== block.blockHeaders.parentHash
+      ) {
+        return rej(
+          new Error(
+            "the parent hash must be a hash of the last block's headers"
+          )
+        );
+      }
+
+      if (block.blockHeaders.number !== lastBlock.blockHeaders.number + 1) {
+        return rej(new Error("The block must increment the number by 1"));
+      }
+
+      if (
+        Math.abs(
+          lastBlock.blockHeaders.difficulty - block.blockHeaders.difficulty
+        ) > 1
+      ) {
+        return rej(new Error("The difficulty must only adjust by 1"));
+      }
+
+      const target = Block.calculateBlockTargetHash({ lastBlock });
+      const { blockHeaders } = block;
+      const { nonce } = blockHeaders;
+      const truncatedBlockHeaders = { ...blockHeaders };
+      delete truncatedBlockHeaders.nonce;
+      const header = keccakHash(truncatedBlockHeaders);
+      const underTargetHash = keccakHash(header + nonce);
+
+      if (underTargetHash > target) {
+        return rej(
+          new Error("The block does not meet the proof of work requirement")
+        );
+      }
+
+      return res();
+    });
   }
 }
 
