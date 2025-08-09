@@ -21,6 +21,28 @@ class Blockchain {
         .catch(rej);
     });
   }
+
+  /**@param {{chain:Block[]}} */
+  replaceChain({ chain }) {
+    return new Promise(async (resolve, reject) => {
+      for (let i = 0; i < chain.length; i++) {
+        const block = chain[i];
+        const lastBlockIdx = i - 1;
+        const lastBlock = lastBlockIdx >= 0 ? chain[i - 1] : null;
+        try {
+          await Block.validateBlock({ lastBlock, block });
+        } catch (e) {
+          return reject(e);
+        }
+
+        console.log(`*-- Validated block number: ${block.blockHeaders.number}`);
+      }
+
+      this.chain = chain;
+
+      return resolve();
+    });
+  }
 }
 
 module.exports = Blockchain;
