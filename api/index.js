@@ -1,9 +1,11 @@
 const express = require("express");
 const Blockchain = require("../blockchain/index");
 const Block = require("../blockchain/block");
+const PubSub = require("./pubsub");
 
 const app = express();
 const blockchain = new Blockchain();
+const pubsub = new PubSub({ blockchain });
 
 app.get("/blockchain", (request, response, next) => {
   const { chain } = blockchain;
@@ -18,6 +20,8 @@ app.get("/blockchain/mine", (request, response, next) => {
   blockchain
     .addBlock({ block })
     .then(() => {
+      pubsub.broadcastBlock(block);
+
       response.json({ block });
     })
     .catch(next);
@@ -31,7 +35,10 @@ app.use(
   }
 );
 
-const PORT = 8080;
+const PORT = process.argv.includes("--peer")
+  ? Math.floor(2000 + Math.random() * 1000)
+  : 3000;
+
 app.listen(PORT, () => {
   console.info(`EXPRESS SEVER LISTENING AT PORT ${PORT}...`);
 });

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node ./api/index.js",
     "dev": "nodemon ./api/index.js",
+    "dev-peer": "nodemon ./api/index.js --peer",
     "test": "jest"
   },
   "repository": {
@@ -21,9 +22,11 @@
   },
   "homepage": "https://github.com/JUMTBOX/ETH_Tutorial#readme",
   "dependencies": {
+    "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jest": "^30.0.4",
-    "js-sha3": "^0.9.3"
+    "js-sha3": "^0.9.3",
+    "pubnub": "^9.8.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
