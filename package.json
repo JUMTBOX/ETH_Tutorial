@@ -9,6 +9,9 @@
     "dev-peer": "nodemon ./api/index.js --peer",
     "test": "jest"
   },
+  "jest": {
+    "testEnvironment": "node"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JUMTBOX/ETH_Tutorial.git"
@@ -23,6 +26,7 @@
   "homepage": "https://github.com/JUMTBOX/ETH_Tutorial#readme",
   "dependencies": {
     "dotenv": "^17.2.1",
+    "elliptic": "^6.6.1",
     "express": "^5.1.0",
     "jest": "^30.0.4",
     "js-sha3": "^0.9.3",

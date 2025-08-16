@@ -1,4 +1,7 @@
 const { keccak256 } = require("js-sha3");
+const EC = require("elliptic").ec;
+
+const ec = new EC("secp256k1");
 
 const sortCharacters = (data) => {
   return JSON.stringify(data).split("").sort().join("");
@@ -15,4 +18,5 @@ const keccakHash = (data) => {
 module.exports = {
   sortCharacters,
   keccakHash,
+  ec,
 };
