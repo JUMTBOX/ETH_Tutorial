@@ -4,6 +4,7 @@
   "description": "",
   "main": "main_1.js",
   "scripts": {
+    "api-test": "node ./api-test",
     "start": "node ./api/index.js",
     "dev": "nodemon ./api/index.js",
     "dev-peer": "nodemon ./api/index.js --peer",
