@@ -18,6 +18,14 @@ class Account {
     return this.keyPair.sign(keccakHash(data));
   }
 
+  toJSON() {
+    const { address, balance } = this;
+    return {
+      address,
+      balance,
+    };
+  }
+
   static verifySignature({ publicKey, data, signature }) {
     const keyFromPublic = ec.keyFromPublic(publicKey, "hex");
 
