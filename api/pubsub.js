@@ -1,6 +1,8 @@
 const PubNub = require("pubnub");
 const Block = require("../blockchain/block");
 const Blockchain = require("../blockchain");
+const Transaction = require("../transaction/index");
+const TransactionQueue = require("../transaction/transaction-queue");
 require("dotenv").config();
 
 const {
@@ -17,9 +19,14 @@ const credentials = {
   userId: PUB_NUB_USER_ID,
 };
 
+/**
+ * @readonly
+ * @enum {string}
+ */
 const CHANNELS_MAP = {
   TEST: "TEST",
   BLOCK: "BLOCK",
+  TRANSACTION: "TRANSACTION",
 };
 
 class PubSub {
@@ -27,11 +34,14 @@ class PubSub {
   pubnub;
   /** @type {Blockchain} */
   blockchain;
+  /** @type {TransactionQueue} */
+  transactionQueue;
 
   /** @param {{blockchain:Blockchain}} */
-  constructor({ blockchain }) {
+  constructor({ blockchain, transactionQueue }) {
     this.pubnub = new PubNub(credentials);
     this.blockchain = blockchain;
+    this.transactionQueue = transactionQueue;
     this.subscribeToChannels();
     this.listen();
   }
@@ -52,7 +62,7 @@ class PubSub {
         const { channel, message } = messageObject;
 
         console.log("Message received. Channel: ", channel);
-
+        /**@type {Block | Partial<Transaction>} */
         const parsedMessage = JSON.parse(message);
         switch (channel) {
           case CHANNELS_MAP.BLOCK:
@@ -61,6 +71,10 @@ class PubSub {
               .addBlock({ block: parsedMessage })
               .then(() => console.log("New block accepted"))
               .catch((e) => console.error("New block rejected: ", e.message));
+            break;
+          case CHANNELS_MAP.TRANSACTION:
+            console.log(`Received transaction: ${parsedMessage.id}`);
+            this.transactionQueue.add(new Transaction(parsedMessage));
             break;
           default:
             return;
@@ -73,6 +87,13 @@ class PubSub {
     this.publish({
       channel: CHANNELS_MAP.BLOCK,
       message: JSON.stringify(block),
+    });
+  }
+  /** @param {Transaction} */
+  broadcastTransaction(transaction) {
+    this.publish({
+      channel: CHANNELS_MAP.TRANSACTION,
+      message: JSON.stringify(transaction),
     });
   }
 }

@@ -10,11 +10,13 @@ const TransactionQueue = require("../transaction/transaction-queue");
 const app = express();
 const blockchain = new Blockchain();
 const transactionQueue = new TransactionQueue();
-const pubsub = new PubSub({ blockchain });
+const pubsub = new PubSub({ blockchain, transactionQueue });
 const account = new Account();
 const transaction = Transaction.createTransaction({ account });
 
-transactionQueue.add(transaction);
+setTimeout(() => {
+  pubsub.broadcastTransaction(transaction);
+}, 500);
 
 /** Using JSON body parsing  */
 app.use(express.json());
@@ -51,6 +53,8 @@ app.post("/account/transact", (req, res, next) => {
   });
 
   transactionQueue.add(transaction);
+  pubsub.broadcastTransaction(transaction);
+
   res.json({ transaction });
 });
 
