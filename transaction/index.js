@@ -1,4 +1,4 @@
-const uuid = require("uuid/v4");
+const { v4: uuid } = require("uuid");
 const Account = require("../account");
 
 /**
@@ -16,7 +16,7 @@ const TRANSACTION_TYPE_MAP = {
  * @property {string|undefined} from
  * @property {string|undefined} to
  * @property {number|undefined} value
- * @property {{type: TRANSACTION_TYPE_MAP}} data
+ * @property {{type: TRANSACTION_TYPE_MAP, accountData: Partial<Account> | undefined}} data
  * @property {string|undefined} signature
  */
 
@@ -72,6 +72,52 @@ class Transaction {
         type: TRANSACTION_TYPE_MAP.CREATE_ACCOUNT,
         accountData: account.toJSON(),
       },
+    });
+  }
+  /** @param {{transaction: Transaction}} */
+  static validateStandardTransaction({ transaction }) {
+    return new Promise((res, rej) => {
+      const { from, signature } = transaction;
+      const transactionData = { ...transaction };
+
+      delete transactionData.signature;
+      if (
+        !Account.verifySignature({
+          publicKey: from,
+          data: transactionData,
+          signature,
+        })
+      ) {
+        return rej(
+          new Error(`Transaction: ${transaction.id} signature is invalid`)
+        );
+      }
+
+      return res();
+    });
+  }
+  /** @param {{transaction: Transaction}} */
+  static validateCreateAccountTransaction({ transaction }) {
+    return new Promise((res, rej) => {
+      const expectedAccountDataFields = Object.keys(new Account().toJSON());
+      const fields = Object.keys(transaction.data.accountData);
+
+      if (fields.length !== expectedAccountDataFields.length) {
+        return rej(
+          new Error(
+            "The transaction account data has an incorrect number of fields"
+          )
+        );
+      }
+
+      fields.forEach((field) => {
+        if (!expectedAccountDataFields.includes(field)) {
+          return rej(
+            new Error(`The field: ${field}, is unexpected for account data`)
+          );
+        }
+      });
+      return res();
     });
   }
 }
