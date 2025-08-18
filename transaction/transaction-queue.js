@@ -1,6 +1,9 @@
 const Transaction = require("./index");
 
 class TransactionQueue {
+  /** @type {{[key:string]: Transaction}} */
+  transactionMap;
+
   constructor() {
     this.transactionMap = {};
   }
@@ -12,6 +15,12 @@ class TransactionQueue {
 
   getTransactionSeries() {
     return Object.values(this.transactionMap);
+  }
+  /** @param {{transactionSeries: Transaction[]}} */
+  clearBlockTransactions({ transactionSeries }) {
+    for (let transaction of transactionSeries) {
+      delete this.transactionMap[transaction.id];
+    }
   }
 }
 

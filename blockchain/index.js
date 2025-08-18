@@ -1,3 +1,4 @@
+const TransactionQueue = require("../transaction/transaction-queue");
 const Block = require("./block");
 
 class Blockchain {
@@ -7,8 +8,8 @@ class Blockchain {
     this.chain = [Block.genesis()];
   }
 
-  /** @param {{block: Block}} */
-  addBlock({ block }) {
+  /** @param {{block: Block, transactionQueue: TransactionQueue}} */
+  addBlock({ block, transactionQueue }) {
     return new Promise((res, rej) => {
       Block.validateBlock({
         lastBlock: this.chain[this.chain.length - 1],
@@ -16,6 +17,9 @@ class Blockchain {
       })
         .then(() => {
           this.chain.push(block);
+          transactionQueue.clearBlockTransactions({
+            transactionSeries: block.transactionSeries,
+          });
           return res();
         })
         .catch(rej);

@@ -1,4 +1,5 @@
 const { GENESIS_DATA, MINE_RATE } = require("../config");
+const Transaction = require("../transaction");
 const { keccakHash } = require("../util/index");
 
 const HASH_LENGTH = 64;
@@ -17,11 +18,15 @@ const MAX_NONCE_VALUE = 2 ** 64;
 class Block {
   /** @type {BlockHeader} */
   blockHeaders;
+  /** @type {Transaction[]} */
+  transactionSeries;
 
-  /** @param {{blockHeaders: BlockHeader}} */
-  constructor({ blockHeaders }) {
+  /** @param {{blockHeaders: BlockHeader, transactionSeries: Transaction[]}} */
+  constructor({ blockHeaders, transactionSeries }) {
     this.blockHeaders = blockHeaders;
+    this.transactionSeries = transactionSeries;
   }
+
   /** @param {{lastBlock:Block}} */
   static calculateBlockTargetHash({ lastBlock }) {
     const value = (MAX_HASH_VALUE / lastBlock.blockHeaders.difficulty).toString(
@@ -49,8 +54,8 @@ class Block {
     return difficulty + 1;
   }
 
-  /** @param {{lastBlock:Block, beneficiary: object}} */
-  static mineBlock({ lastBlock, beneficiary }) {
+  /** @param {{lastBlock:Block, beneficiary: object, transactionSeries: Transaction[]}} */
+  static mineBlock({ lastBlock, beneficiary, transactionSeries }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
 
@@ -62,6 +67,10 @@ class Block {
         difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
         number: lastBlock.blockHeaders.number + 1,
         timestamp,
+        /**
+         * NOTE: the `transactionRoot` will be refactored once Tries are implemented.
+         */
+        transactionRoot: keccakHash(transactionSeries),
       };
 
       header = keccakHash(truncatedBlockHeaders);
@@ -72,6 +81,7 @@ class Block {
 
     return new this({
       blockHeaders: { ...truncatedBlockHeaders, nonce },
+      transactionSeries,
     });
   }
 
