@@ -1,5 +1,6 @@
 const { v4: uuid } = require("uuid");
 const Account = require("../account");
+const State = require("../store/state");
 
 /**
  * @readonly
@@ -119,6 +120,49 @@ class Transaction {
       });
       return res();
     });
+  }
+
+  /** @param {{transaction: Transaction, state: State}}  */
+  static runTransaction({ transaction, state }) {
+    switch (transaction.data.type) {
+      case TRANSACTION_TYPE_MAP.TRANSACT: {
+        Transaction.runStandardTransaction({ transaction, state });
+        console.info(
+          " -- Updated account data to reflect the standard transaction"
+        );
+        break;
+      }
+      case TRANSACTION_TYPE_MAP.CREATE_ACCOUNT: {
+        Transaction.runCreateAccountTransaction({ transaction, state });
+        console.info("-- Stored the account data");
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  /** @param {{transaction: Transaction, state: State}}  */
+  static runStandardTransaction({ transaction, state }) {
+    const { value, from, to } = transaction;
+    const fromAccount = state.getAccount({ address: from });
+    const toAccount = state.getAccount({ address: to });
+
+    fromAccount.balance -= value;
+    toAccount.balance += value;
+
+    state.putAccout({ address: from, accountData: fromAccount });
+    state.putAccout({ address: to, accountData: toAccount });
+  }
+
+  /** @param {{transaction: Transaction, state: State}}  */
+  static runCreateAccountTransaction({ transaction, state }) {
+    const {
+      data: { accountData },
+    } = transaction;
+    const { address } = accountData;
+
+    state.putAccout({ address, accountData });
   }
 }
 

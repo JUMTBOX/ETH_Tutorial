@@ -4,11 +4,16 @@ const Account = require("../account/index");
 const Blockchain = require("../blockchain/index");
 const Block = require("../blockchain/block");
 const PubSub = require("./pubsub");
+const State = require("../store/state");
 const Transaction = require("../transaction/index");
 const TransactionQueue = require("../transaction/transaction-queue");
 
 const app = express();
-const blockchain = new Blockchain();
+/** Using JSON body parsing  */
+app.use(express.json());
+
+const state = new State();
+const blockchain = new Blockchain({ state });
 const transactionQueue = new TransactionQueue();
 const pubsub = new PubSub({ blockchain, transactionQueue });
 const account = new Account();
@@ -17,9 +22,6 @@ const transaction = Transaction.createTransaction({ account });
 setTimeout(() => {
   pubsub.broadcastTransaction(transaction);
 }, 500);
-
-/** Using JSON body parsing  */
-app.use(express.json());
 
 app.get("/blockchain", (request, response, next) => {
   const { chain } = blockchain;
@@ -33,6 +35,7 @@ app.get("/blockchain/mine", (request, response, next) => {
     lastBlock,
     beneficiary: account.address,
     transactionSeries: transactionQueue.getTransactionSeries(),
+    stateRoot: state.getStateRoot(),
   });
 
   blockchain
@@ -57,6 +60,16 @@ app.post("/account/transact", (req, res, next) => {
   pubsub.broadcastTransaction(transaction);
 
   res.json({ transaction });
+});
+
+app.get("/account/balance", (req, res, next) => {
+  const { address } = req.query;
+  const balance = Account.calculateBalance({
+    address: address || account.address,
+    state,
+  });
+
+  res.json({ balance });
 });
 
 app.use(

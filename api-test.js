@@ -1,3 +1,4 @@
+const Account = require("./account");
 const Transaction = require("./transaction");
 
 const BASE_URL = "http://localhost:3000";
@@ -23,10 +24,29 @@ const getMine = async () => {
   });
 };
 
+const getAccountBalance = async ({ address } = {}) => {
+  const response = await fetch(
+    `${BASE_URL}/account/balance${!!address ? "?address=" + address : ""}`,
+    {
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  const { balance } = await response.json();
+  return balance;
+};
+
+/** @type {Partial<Account>} */
+let toAccountData;
 postTransact({})
   .then((body) => {
     console.log("FIRST RESPOSNE >>> ", body);
-    const toAccountData = body.transaction.data.accountData;
+
+    toAccountData = body.transaction.data.accountData;
+
+    return getMine();
+  })
+  .then((mineResponse2) => {
+    console.log("mineResponse >>> ", mineResponse2);
     return postTransact({ to: toAccountData.address, value: 20 });
   })
   .then((secondBody) => {
@@ -36,4 +56,14 @@ postTransact({})
   })
   .then((res) => {
     console.info("MINE_BLOCK_RESPONSE >>> ", res);
+
+    return getAccountBalance();
+  })
+  .then((balance) => {
+    console.info("getAccountBalanceResponse1 >>> ", balance);
+
+    return getAccountBalance({ address: toAccountData.address });
+  })
+  .then((balance) => {
+    console.info("getAccountBalanceResponse2 >>> ", balance);
   });

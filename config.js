@@ -9,6 +9,7 @@ const GENESIS_DATA = {
     transactionsRoot: "--genesis-transaction-root",
   },
   transactionSeries: [],
+  stateRoot: "--genesis-state-root--",
 };
 
 const MILLISECONDS = 1;

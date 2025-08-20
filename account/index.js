@@ -1,5 +1,6 @@
 const { ec, keccakHash } = require("../util/index");
 const { STARTING_BALANCE } = require("../config");
+const State = require("../store/state");
 
 class Account {
   /**@type {ec.keyPair} */
@@ -30,6 +31,12 @@ class Account {
     const keyFromPublic = ec.keyFromPublic(publicKey, "hex");
 
     return keyFromPublic.verify(keccakHash(data), signature);
+  }
+
+  /** @param {{address: string, state: State }}*/
+  static calculateBalance({ address, state }) {
+    const { balance } = state.getAccount({ address });
+    return balance;
   }
 }
 

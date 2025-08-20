@@ -1,4 +1,5 @@
 const { GENESIS_DATA, MINE_RATE } = require("../config");
+const State = require("../store/state");
 const Transaction = require("../transaction");
 const { keccakHash } = require("../util/index");
 
@@ -54,8 +55,8 @@ class Block {
     return difficulty + 1;
   }
 
-  /** @param {{lastBlock:Block, beneficiary: object, transactionSeries: Transaction[]}} */
-  static mineBlock({ lastBlock, beneficiary, transactionSeries }) {
+  /** @param {{lastBlock:Block, beneficiary: object, transactionSeries: Transaction[], stateRoot:string}} */
+  static mineBlock({ lastBlock, beneficiary, transactionSeries, stateRoot }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
 
@@ -71,6 +72,7 @@ class Block {
          * NOTE: the `transactionRoot` will be refactored once Tries are implemented.
          */
         transactionRoot: keccakHash(transactionSeries),
+        stateRoot,
       };
 
       header = keccakHash(truncatedBlockHeaders);
@@ -134,6 +136,13 @@ class Block {
 
       return res();
     });
+  }
+
+  /** @param {{block: Block, state: State}} */
+  static runBlock({ block, state }) {
+    for (let transaction of block.transactionSeries) {
+      Transaction.runTransaction({ transaction, state });
+    }
   }
 }
 
