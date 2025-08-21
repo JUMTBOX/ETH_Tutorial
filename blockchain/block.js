@@ -91,8 +91,8 @@ class Block {
     return new this(GENESIS_DATA);
   }
 
-  /** @param {{lastBlock: Block, block: Block}} */
-  static validateBlock({ lastBlock, block }) {
+  /** @param {{lastBlock: Block, block: Block, state:State}} */
+  static validateBlock({ lastBlock, block, state }) {
     return new Promise((res, rej) => {
       if (keccakHash(block) === keccakHash(Block.genesis())) {
         return res();
@@ -133,6 +133,13 @@ class Block {
           new Error("The block does not meet the proof of work requirement")
         );
       }
+
+      Transaction.validateTransactionSeries({
+        state,
+        transactionSeries: block.transactionSeries,
+      })
+        .then(res)
+        .catch(rej);
 
       return res();
     });

@@ -75,10 +75,10 @@ class Transaction {
       },
     });
   }
-  /** @param {{transaction: Transaction}} */
-  static validateStandardTransaction({ transaction }) {
+  /** @param {{transaction: Transaction, state: State}} */
+  static validateStandardTransaction({ transaction, state }) {
     return new Promise((res, rej) => {
-      const { from, signature } = transaction;
+      const { id, from, to, signature, value } = transaction;
       const transactionData = { ...transaction };
 
       delete transactionData.signature;
@@ -89,14 +89,27 @@ class Transaction {
           signature,
         })
       ) {
+        return rej(new Error(`Transaction: ${id} signature is invalid`));
+      }
+
+      const { balance: fromBalance } = state.getAccount({ address: from });
+
+      if (value > fromBalance) {
         return rej(
-          new Error(`Transaction: ${transaction.id} signature is invalid`)
+          new Error(
+            `Transaction value: ${value} exceeds balance: ${fromBalance}`
+          )
         );
       }
 
+      const toAccount = state.getAccount({ address: to });
+      if (!toAccount) {
+        return rej(new Error(`The to field: ${to} does not exist`));
+      }
       return res();
     });
   }
+
   /** @param {{transaction: Transaction}} */
   static validateCreateAccountTransaction({ transaction }) {
     return new Promise((res, rej) => {
@@ -118,6 +131,36 @@ class Transaction {
           );
         }
       });
+      return res();
+    });
+  }
+
+  /** @param {{transactionSeries: Transaction [], state: State}} */
+  static validateTransactionSeries({ transactionSeries, state }) {
+    return new Promise(async (res, rej) => {
+      for (let transaction of transactionSeries) {
+        try {
+          switch (transaction.data.type) {
+            case TRANSACTION_TYPE_MAP.CREATE_ACCOUNT:
+              await Transaction.validateCreateAccountTransaction({
+                transaction,
+                state,
+              });
+              break;
+            case TRANSACTION_TYPE_MAP.TRANSACT:
+              await Transaction.validateStandardTransaction({
+                transaction,
+                state,
+              });
+              break;
+            default:
+              break;
+          }
+        } catch (e) {
+          return rej(e);
+        }
+      }
+
       return res();
     });
   }

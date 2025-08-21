@@ -1,4 +1,5 @@
 const { keccakHash } = require("../util/index");
+const _ = require("lodash");
 
 class Node {
   constructor() {
@@ -34,7 +35,7 @@ class Trie {
       }
     }
 
-    return structuredClone(node.value);
+    return _.cloneDeep(node.value);
   }
 
   /** @param {{key: string, value: object}} */

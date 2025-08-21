@@ -1,4 +1,5 @@
 const Block = require("./block");
+const State = require("../store/state");
 const { keccakHash } = require("../util");
 
 describe("Block", () => {
@@ -85,8 +86,9 @@ describe("Block", () => {
     /** @type {Block} */
     let block,
       /** @type {Block} */
-      lastBlock;
-
+      lastBlock,
+      /** @type {State} */
+      state;
     beforeEach(() => {
       lastBlock = Block.genesis();
       block = Block.mineBlock({
@@ -97,23 +99,27 @@ describe("Block", () => {
     });
 
     it("resolves when the block is the genesis block", () => {
-      expect(Block.validateBlock({ block: Block.genesis() })).resolves;
+      expect(Block.validateBlock({ block: Block.genesis(), state })).resolves;
     });
 
     it("resolves if block is valid", () => {
-      expect(Block.validateBlock({ lastBlock, block })).resolves;
+      expect(Block.validateBlock({ lastBlock, block, state })).resolves;
     });
 
     it("rejects when the parentHash is invalid", () => {
       block.blockHeaders.parentHash = "foo";
-      expect(Block.validateBlock({ lastBlock, block })).rejects.toMatchObject({
+      expect(
+        Block.validateBlock({ lastBlock, block, state })
+      ).rejects.toMatchObject({
         message: "the parent hash must be a hash of the last block's headers",
       });
     });
 
     it("rejects when the number is not increased by one", () => {
       block.blockHeaders.number = 500;
-      expect(Block.validateBlock({ lastBlock, block })).rejects.toMatchObject({
+      expect(
+        Block.validateBlock({ lastBlock, block, state })
+      ).rejects.toMatchObject({
         message: "The block must increment the number by 1",
       });
     });
@@ -121,7 +127,9 @@ describe("Block", () => {
     it("rejects when the difficulty adjusts by more than 1", () => {
       block.blockHeaders.difficulty = 999;
 
-      expect(Block.validateBlock({ lastBlock, block })).rejects.toMatchObject({
+      expect(
+        Block.validateBlock({ lastBlock, block, state })
+      ).rejects.toMatchObject({
         message: "The difficulty must only adjust by 1",
       });
     });
@@ -132,7 +140,9 @@ describe("Block", () => {
         return "0".repeat(64);
       };
 
-      expect(Block.validateBlock({ lastBlock, block })).rejects.toMatchObject({
+      expect(
+        Block.validateBlock({ lastBlock, block, state })
+      ).rejects.toMatchObject({
         message: "The block does not meet the proof of work requirement",
       });
 
