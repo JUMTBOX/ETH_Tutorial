@@ -1,5 +1,6 @@
 const { GENESIS_DATA, MINE_RATE } = require("../config");
 const State = require("../store/state");
+const Trie = require("../store/trie");
 const Transaction = require("../transaction");
 const { keccakHash } = require("../util/index");
 
@@ -15,6 +16,8 @@ const MAX_NONCE_VALUE = 2 ** 64;
  * @property {string|undefined} parentHash
  * @property {number|undefined} nonce
  * @property {object|undefined} beneficiary
+ * @property {string} transactionRoot
+ * @property {string} stateRoot
  */
 class Block {
   /** @type {BlockHeader} */
@@ -58,6 +61,13 @@ class Block {
   /** @param {{lastBlock:Block, beneficiary: object, transactionSeries: Transaction[], stateRoot:string}} */
   static mineBlock({ lastBlock, beneficiary, transactionSeries, stateRoot }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
+
+    const miningRewardTransaction = Transaction.createTransaction({
+      beneficiary,
+    });
+    transactionSeries.push(miningRewardTransaction);
+
+    const transactionTrie = Trie.buildTrie({ items: transactionSeries });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
 
     do {
@@ -68,10 +78,7 @@ class Block {
         difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
         number: lastBlock.blockHeaders.number + 1,
         timestamp,
-        /**
-         * NOTE: the `transactionRoot` will be refactored once Tries are implemented.
-         */
-        transactionRoot: keccakHash(transactionSeries),
+        transactionRoot: transactionTrie.rootHash,
         stateRoot,
       };
 
@@ -118,6 +125,21 @@ class Block {
         ) > 1
       ) {
         return rej(new Error("The difficulty must only adjust by 1"));
+      }
+
+      const rebuiltTransactionTrie = Trie.buildTrie({
+        items: block.transactionSeries,
+      });
+
+      if (
+        rebuiltTransactionTrie.rootHash !== block.blockHeaders.transactionRoot
+      ) {
+        return rej(
+          new Error(
+            `The rebuilt transactions root does not match the block's` +
+              `transactions root: ${block.blockHeaders.transactionRoot}`
+          )
+        );
       }
 
       const target = Block.calculateBlockTargetHash({ lastBlock });

@@ -3,7 +3,18 @@ const Account = require("../account");
 const State = require("../store/state");
 
 describe("Transaction", () => {
-  let account, standardTransaction, createAccountTransaction, state, toAccount;
+  /** @type {Account} */
+  let account,
+    /** @type {Transaction} */
+    standardTransaction,
+    /** @type {Transaction} */
+    createAccountTransaction,
+    /** @type {Transaction} */
+    miningRewardTransaction,
+    /** @type {State} */
+    state,
+    /** @type {Account} */
+    toAccount;
 
   beforeEach(() => {
     account = new Account();
@@ -21,6 +32,10 @@ describe("Transaction", () => {
 
     createAccountTransaction = Transaction.createTransaction({
       account,
+    });
+
+    miningRewardTransaction = Transaction.createTransaction({
+      beneficiary: account.address,
     });
   });
 
@@ -88,6 +103,25 @@ describe("Transaction", () => {
           transaction: standardTransaction,
         })
       ).rejects.toMatchObject({ message: /incorrect/ });
+    });
+  });
+
+  describe("validateMiningRewardTransaction", () => {
+    it("validates a mining reward transaction", () => {
+      expect(
+        Transaction.validateMiningRewardTransaction({
+          transaction: miningRewardTransaction,
+        })
+      ).resolves;
+    });
+
+    it("does not validate a tampered with mining reward transaction", () => {
+      miningRewardTransaction.value = 9001;
+      expect(
+        Transaction.validateMiningRewardTransaction({
+          transaction: miningRewardTransaction,
+        })
+      ).rejects.toMatchObject({ message: /does not equal the official/ });
     });
   });
 });

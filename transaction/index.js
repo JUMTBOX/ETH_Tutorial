@@ -1,6 +1,7 @@
 const { v4: uuid } = require("uuid");
 const Account = require("../account");
 const State = require("../store/state");
+const { MINING_REWARD } = require("../config");
 
 /**
  * @readonly
@@ -9,6 +10,7 @@ const State = require("../store/state");
 const TRANSACTION_TYPE_MAP = {
   CREATE_ACCOUNT: "CREATE_ACCOUNT",
   TRANSACT: "TRANSACT",
+  MINING_REWARD: "MINING_REWARD",
 };
 
 /**
@@ -26,6 +28,7 @@ const TRANSACTION_TYPE_MAP = {
  * @property {Account} account
  * @property {string} to
  * @property {number} value
+ * @property {string} beneficiary
  */
 
 class Transaction {
@@ -52,7 +55,15 @@ class Transaction {
   }
 
   /** @param {CTParam}*/
-  static createTransaction({ account, to, value }) {
+  static createTransaction({ account, to, value, beneficiary }) {
+    if (!!beneficiary) {
+      return new Transaction({
+        to: beneficiary,
+        value: MINING_REWARD,
+        data: { type: TRANSACTION_TYPE_MAP.MINING_REWARD },
+      });
+    }
+
     if (!!to) {
       const transactionData = {
         id: uuid(),
@@ -109,7 +120,23 @@ class Transaction {
       return res();
     });
   }
+  /** @param {{transaction: Transaction}} */
+  static validateMiningRewardTransaction({ transaction }) {
+    return new Promise((res, rej) => {
+      const { value } = transaction;
 
+      if (value !== MINING_REWARD) {
+        return rej(
+          new Error(
+            `The provided mining reward value : ${value} does not equal` +
+              `the official value: ${MINING_REWARD}`
+          )
+        );
+      }
+
+      return res();
+    });
+  }
   /** @param {{transaction: Transaction}} */
   static validateCreateAccountTransaction({ transaction }) {
     return new Promise((res, rej) => {
@@ -153,6 +180,12 @@ class Transaction {
                 state,
               });
               break;
+            case TRANSACTION_TYPE_MAP.MINING_REWARD:
+              await Transaction.validateMiningRewardTransaction({
+                transaction,
+                state,
+              });
+              break;
             default:
               break;
           }
@@ -178,6 +211,11 @@ class Transaction {
       case TRANSACTION_TYPE_MAP.CREATE_ACCOUNT: {
         Transaction.runCreateAccountTransaction({ transaction, state });
         console.info("-- Stored the account data");
+        break;
+      }
+      case TRANSACTION_TYPE_MAP.MINING_REWARD: {
+        Transaction.runMiningRewardTransaction({ transaction, state });
+        console.info(" -- Updated account data to reflect the mining reward");
         break;
       }
       default:
@@ -206,6 +244,16 @@ class Transaction {
     const { address } = accountData;
 
     state.putAccout({ address, accountData });
+  }
+
+  /** @param {{transaction: Transaction, state: State}}  */
+  static runMiningRewardTransaction({ transaction, state }) {
+    const { to, value } = transaction;
+    const accountData = state.getAccount({ address: to });
+
+    accountData.balance += value;
+
+    state.putAccout({ address: to, accountData });
   }
 }
 

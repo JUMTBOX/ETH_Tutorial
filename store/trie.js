@@ -1,3 +1,4 @@
+const Transaction = require("../transaction");
 const { keccakHash } = require("../util/index");
 const _ = require("lodash");
 
@@ -52,6 +53,19 @@ class Trie {
 
     node.value = value;
     this.generateRootHash();
+  }
+
+  /**
+   * @param {{items: Transaction[]}}
+   * @returns {Trie}
+   * */
+  static buildTrie({ items }) {
+    const trie = new this();
+
+    for (let item of items.sort((a, b) => keccakHash(a) > keccakHash(b))) {
+      trie.put({ key: keccakHash(item), value: item });
+    }
+    return trie;
   }
 }
 
