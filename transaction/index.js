@@ -22,6 +22,7 @@ const TRANSACTION_TYPE_MAP = {
  * @property {number|undefined} value
  * @property {{type: TRANSACTION_TYPE_MAP, accountData: Partial<Account> | undefined}} data
  * @property {string|undefined} signature
+ * @property {number|undefined} gasLimit
  */
 
 /**
@@ -30,6 +31,7 @@ const TRANSACTION_TYPE_MAP = {
  * @property {string} to
  * @property {number} value
  * @property {string} beneficiary
+ * @property {number} gasLimit
  */
 
 class Transaction {
@@ -44,23 +46,27 @@ class Transaction {
   /**@type {string} */
   signature;
   data;
+  /**@type {number} */
+  gasLimit;
 
   /** @param {TransactionFields} */
-  constructor({ id, from, to, value, data, signature }) {
+  constructor({ id, from, to, value, data, signature, gasLimit }) {
     this.id = id || uuid();
     this.from = from || "-";
     this.to = to || "-";
     this.value = value || 0;
     this.data = data || "-";
     this.signature = signature || "-";
+    this.gasLimit = gasLimit || 0;
   }
 
   /** @param {CTParam}*/
-  static createTransaction({ account, to, value, beneficiary }) {
+  static createTransaction({ account, to, value, beneficiary, gasLimit }) {
     if (!!beneficiary) {
       return new Transaction({
         to: beneficiary,
         value: MINING_REWARD,
+        gasLimit: gasLimit || 0,
         data: { type: TRANSACTION_TYPE_MAP.MINING_REWARD },
       });
     }
@@ -71,6 +77,7 @@ class Transaction {
         from: account.address,
         to,
         value,
+        gasLimit,
         data: { type: TRANSACTION_TYPE_MAP.TRANSACT },
       };
 
@@ -90,10 +97,11 @@ class Transaction {
   /** @param {{transaction: Transaction, state: State}} */
   static validateStandardTransaction({ transaction, state }) {
     return new Promise((res, rej) => {
-      const { id, from, to, signature, value } = transaction;
+      const { id, from, to, signature, value, gasLimit } = transaction;
       const transactionData = { ...transaction };
 
       delete transactionData.signature;
+
       if (
         !Account.verifySignature({
           publicKey: from,
@@ -106,10 +114,10 @@ class Transaction {
 
       const { balance: fromBalance } = state.getAccount({ address: from });
 
-      if (value > fromBalance) {
+      if (value + gasLimit > fromBalance) {
         return rej(
           new Error(
-            `Transaction value: ${value} exceeds balance: ${fromBalance}`
+            `Transaction value and gasLimit: ${value} exceeds balance: ${fromBalance}`
           )
         );
       }
@@ -117,6 +125,17 @@ class Transaction {
       const toAccount = state.getAccount({ address: to });
       if (!toAccount) {
         return rej(new Error(`The to field: ${to} does not exist`));
+      }
+
+      if (!!toAccount.codeHash) {
+        const { gasUsed } = new InterPreter().runCode(toAccount.code);
+        if (gasUsed > gasLimit) {
+          return rej(
+            new Error(
+              `Transaction needs more gas. Provided: ${gasLimit}. Needs: ${gasUsed}`
+            )
+          );
+        }
       }
       return res();
     });
@@ -226,19 +245,27 @@ class Transaction {
 
   /** @param {{transaction: Transaction, state: State}}  */
   static runStandardTransaction({ transaction, state }) {
-    const { value, from, to } = transaction;
+    const { value, from, to, gasLimit } = transaction;
     const fromAccount = state.getAccount({ address: from });
     const toAccount = state.getAccount({ address: to });
 
+    let gasUsed = 0,
+      result;
+
     if (!!toAccount.codeHash) {
-      const result = new InterPreter().runCode(toAccount.code);
+      ({ result, gasUsed } = new InterPreter().runCode(toAccount.code));
       console.info(
         ` -*- Smart contract execution: ${transaction.id} - RESULT: ${result}`
       );
     }
 
+    const refund = gasLimit - gasUsed;
+
     fromAccount.balance -= value;
+    fromAccount.balance -= gasLimit;
+    fromAccount.balance += refund;
     toAccount.balance += value;
+    toAccount.balance += gasUsed;
 
     state.putAccout({ address: from, accountData: fromAccount });
     state.putAccout({ address: to, accountData: toAccount });

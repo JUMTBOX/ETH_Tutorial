@@ -1,0 +1,8 @@
+{
+  "jest.autoRun": {
+    "watch": true,
+    "onSave": "test-file"
+  },
+  "jest.runMode": "on-demand",
+  "jest.jestCommandLine": "jest --onlyChanged"
+}

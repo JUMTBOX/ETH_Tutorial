@@ -5,11 +5,11 @@ const { STOP, ADD, PUSH } = INSTRUCTIONS;
 
 const BASE_URL = "http://localhost:3000";
 
-const postTransact = async ({ code, to, value }) => {
+const postTransact = async ({ code, to, value, gasLimit }) => {
   const response = await fetch(`${BASE_URL}/account/transact`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, to, value }),
+    body: JSON.stringify({ code, to, value, gasLimit }),
   });
   /** @type {{transaction: Transaction}} */
   const body = await response.json();
@@ -41,6 +41,7 @@ const getAccountBalance = async ({ address } = {}) => {
 let toAccountData;
 /** @type {Account} */
 let smartContractAccountData;
+
 postTransact({})
   .then((body) => {
     console.log("FIRST RESPOSNE >>> ", body);
@@ -69,6 +70,7 @@ postTransact({})
     return postTransact({
       to: smartContractAccountData.codeHash,
       value: 0,
+      gasLimit: 100,
     });
   })
   .then((res) => {

@@ -1,3 +1,7 @@
+/**
+ * @readonly
+ * @enum {string}
+ * */
 const INSTRUCTIONS = {
   STOP: "STOP",
   ADD: "ADD",
@@ -12,6 +16,22 @@ const INSTRUCTIONS = {
   OR: "OR",
   JUMP: "JUMP",
   JUMPI: "JUMPI",
+};
+
+const OPCODE_GAS_MAP = {
+  STOP: 0,
+  ADD: 1,
+  SUB: 1,
+  MUL: 1,
+  DIV: 1,
+  PUSH: 0,
+  LT: 1,
+  GT: 1,
+  EQ: 1,
+  AND: 1,
+  OR: 1,
+  JUMP: 2,
+  JUMPI: 2,
 };
 
 const ERROR_CODE = {
@@ -48,6 +68,7 @@ const ERROR_CODE = {
 class InterPreter {
   static INSTRUCTIONS = INSTRUCTIONS;
   static ERROR_CODE = ERROR_CODE;
+  static OPCODE_GAS_MAP = OPCODE_GAS_MAP;
 
   constructor() {
     this.state = {
@@ -71,8 +92,13 @@ class InterPreter {
     this.state.programCounter--;
   }
 
+  /**
+   * @param {Array<Partial<INSTRUCTIONS> | number>} code
+   * @returns {{result: number | string, gasUsed:number}}
+   * */
   runCode(code) {
     this.state.code = code;
+    let gasUsed = 0;
 
     while (this.state.programCounter < this.state.code.length) {
       this.state.executionCount++;
@@ -99,6 +125,7 @@ class InterPreter {
         JUMPI,
       } = INSTRUCTIONS;
       const operationCode = this.state.code[this.state.programCounter];
+      gasUsed += OPCODE_GAS_MAP[operationCode];
 
       try {
         switch (operationCode) {
@@ -154,7 +181,12 @@ class InterPreter {
         }
       } catch (error) {
         if (error?.message.includes(ERROR_CODE.EXECUTION_COMPLETE)) {
-          return this.state.stack[this.state.stack.length - 1];
+          const result = this.state.stack[this.state.stack.length - 1];
+
+          return {
+            result,
+            gasUsed,
+          };
         }
         throw error;
       }
