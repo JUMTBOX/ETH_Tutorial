@@ -1,7 +1,23 @@
+const Trie = require("../store/trie");
 const InterPreter = require("./index");
 
-const { PUSH, ADD, STOP, SUB, MUL, DIV, LT, GT, EQ, AND, OR, JUMP, JUMPI } =
-  InterPreter.INSTRUCTIONS;
+const {
+  PUSH,
+  ADD,
+  STOP,
+  SUB,
+  MUL,
+  DIV,
+  LT,
+  GT,
+  EQ,
+  AND,
+  OR,
+  JUMP,
+  JUMPI,
+  STORE,
+  LOAD,
+} = InterPreter.INSTRUCTIONS;
 
 describe("Interperter", () => {
   describe("runCode()", () => {
@@ -105,6 +121,44 @@ describe("Interperter", () => {
             STOP,
           ]).result
         ).toEqual("jump successful");
+      });
+    });
+
+    describe("and the code includes STORE", () => {
+      const interpreter = new InterPreter({
+        storageTrie: new Trie(),
+      });
+
+      const [key, value] = ["foo", "bar"];
+
+      interpreter.runCode([PUSH, value, PUSH, key, STORE, STOP]);
+
+      it("stores a value", () => {
+        expect(interpreter.storageTrie.get({ key })).toEqual(value);
+      });
+    });
+
+    describe("and the code includes LOAD", () => {
+      const interpreter = new InterPreter({
+        storageTrie: new Trie(),
+      });
+
+      const [key, value] = ["foo", "bar"];
+
+      it("loads a stored value", () => {
+        expect(
+          interpreter.runCode([
+            PUSH,
+            value,
+            PUSH,
+            key,
+            STORE,
+            PUSH,
+            key,
+            LOAD,
+            STOP,
+          ]).result
+        ).toEqual(value);
       });
     });
 

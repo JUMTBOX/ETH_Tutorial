@@ -1,3 +1,5 @@
+const Trie = require("../store/trie");
+
 /**
  * @readonly
  * @enum {string}
@@ -16,6 +18,8 @@ const INSTRUCTIONS = {
   OR: "OR",
   JUMP: "JUMP",
   JUMPI: "JUMPI",
+  STORE: "STORE",
+  LOAD: "LOAD",
 };
 
 const OPCODE_GAS_MAP = {
@@ -32,6 +36,8 @@ const OPCODE_GAS_MAP = {
   OR: 1,
   JUMP: 2,
   JUMPI: 2,
+  STORE: 5,
+  LOAD: 5,
 };
 
 const ERROR_CODE = {
@@ -70,13 +76,18 @@ class InterPreter {
   static ERROR_CODE = ERROR_CODE;
   static OPCODE_GAS_MAP = OPCODE_GAS_MAP;
 
-  constructor() {
+  /**@type {Trie} */
+  storageTrie;
+
+  /** @param {{storageTrie: Trie} | {}} */
+  constructor({ storageTrie } = {}) {
     this.state = {
       programCounter: 0,
       executionCount: 0,
       stack: [],
       code: [],
     };
+    this.storageTrie = storageTrie;
   }
 
   jump() {
@@ -123,6 +134,8 @@ class InterPreter {
         OR,
         JUMP,
         JUMPI,
+        STORE,
+        LOAD,
       } = INSTRUCTIONS;
       const operationCode = this.state.code[this.state.programCounter];
       gasUsed += OPCODE_GAS_MAP[operationCode];
@@ -176,6 +189,21 @@ class InterPreter {
             const condition = this.state.stack.pop();
             if (condition === 1) this.jump();
             break;
+          case STORE: {
+            const key = this.state.stack.pop();
+            const value = this.state.stack.pop();
+
+            this.storageTrie.put({ key, value });
+            break;
+          }
+          case LOAD: {
+            const key = this.state.stack.pop();
+            const value = this.storageTrie.get({ key });
+
+            this.state.stack.push(value);
+
+            break;
+          }
           default:
             break;
         }

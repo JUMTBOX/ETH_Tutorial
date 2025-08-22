@@ -128,7 +128,9 @@ class Transaction {
       }
 
       if (!!toAccount.codeHash) {
-        const { gasUsed } = new InterPreter().runCode(toAccount.code);
+        const { gasUsed } = new InterPreter({
+          storageTrie: state.storageTrieMap[toAccount.codeHash],
+        }).runCode(toAccount.code);
         if (gasUsed > gasLimit) {
           return rej(
             new Error(
@@ -253,7 +255,9 @@ class Transaction {
       result;
 
     if (!!toAccount.codeHash) {
-      ({ result, gasUsed } = new InterPreter().runCode(toAccount.code));
+      ({ result, gasUsed } = new InterPreter({
+        storageTrie: state.storageTrieMap[toAccount.codeHash],
+      }).runCode(toAccount.code));
       console.info(
         ` -*- Smart contract execution: ${transaction.id} - RESULT: ${result}`
       );

@@ -1,7 +1,7 @@
 const Account = require("./account");
 const Transaction = require("./transaction");
 const { INSTRUCTIONS, ERROR_CODE } = require("./interpreter/index");
-const { STOP, ADD, PUSH } = INSTRUCTIONS;
+const { STOP, ADD, PUSH, STORE, LOAD } = INSTRUCTIONS;
 
 const BASE_URL = "http://localhost:3000";
 
@@ -56,7 +56,10 @@ postTransact({})
   })
   .then((secondBody) => {
     console.log("SECOND POST_Transact RESPOSNE >>> ", secondBody);
-    const code = [PUSH, 4, PUSH, 5, ADD, STOP];
+
+    const [key, value] = ["foo", "bar"];
+    const code = [PUSH, value, PUSH, key, STORE, PUSH, key, LOAD, STOP];
+
     return postTransact({ code });
   })
   .then((thirdBody) => {

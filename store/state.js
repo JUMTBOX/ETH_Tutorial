@@ -4,14 +4,26 @@ const Account = require("../account");
 class State {
   /**@type {Trie} */
   stateTrie;
-
+  /**@type {{[key:string]: Trie}} */
+  storageTrieMap;
   constructor() {
     this.stateTrie = new Trie();
+    this.storageTrieMap = {};
   }
 
   /** @param {{address: string, accountData: Account}} */
   putAccout({ address, accountData }) {
-    this.stateTrie.put({ key: address, value: accountData });
+    if (!this.storageTrieMap[address]) {
+      this.storageTrieMap[address] = new Trie();
+    }
+
+    this.stateTrie.put({
+      key: address,
+      value: {
+        ...accountData,
+        storageRoot: this.storageTrieMap[address].rootHash,
+      },
+    });
   }
   /**
    * @param {{address: string}}
