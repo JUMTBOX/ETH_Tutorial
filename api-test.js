@@ -1,13 +1,15 @@
 const Account = require("./account");
 const Transaction = require("./transaction");
+const { INSTRUCTIONS, ERROR_CODE } = require("./interpreter/index");
+const { STOP, ADD, PUSH } = INSTRUCTIONS;
 
 const BASE_URL = "http://localhost:3000";
 
-const postTransact = async ({ to, value }) => {
+const postTransact = async ({ code, to, value }) => {
   const response = await fetch(`${BASE_URL}/account/transact`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ to, value }),
+    body: JSON.stringify({ code, to, value }),
   });
   /** @type {{transaction: Transaction}} */
   const body = await response.json();
@@ -37,6 +39,8 @@ const getAccountBalance = async ({ address } = {}) => {
 
 /** @type {Partial<Account>} */
 let toAccountData;
+/** @type {Account} */
+let smartContractAccountData;
 postTransact({})
   .then((body) => {
     console.log("FIRST RESPOSNE >>> ", body);
@@ -46,17 +50,33 @@ postTransact({})
     return getMine();
   })
   .then((mineResponse2) => {
-    console.log("mineResponse >>> ", mineResponse2);
+    console.log("MINE_BLOCK_RESPONSE1 >>> ", mineResponse2);
     return postTransact({ to: toAccountData.address, value: 20 });
   })
   .then((secondBody) => {
-    console.log("SECOND RESPOSNE >>> ", secondBody);
+    console.log("SECOND POST_Transact RESPOSNE >>> ", secondBody);
+    const code = [PUSH, 4, PUSH, 5, ADD, STOP];
+    return postTransact({ code });
+  })
+  .then((thirdBody) => {
+    console.log("THIRD POST_Transact RESPOSNE >>> ", thirdBody);
 
+    smartContractAccountData = thirdBody.transaction.data.accountData;
     return getMine();
   })
   .then((res) => {
-    console.info("MINE_BLOCK_RESPONSE >>> ", res);
-
+    console.info("MINE_BLOCK_RESPONSE2 >>> ", res);
+    return postTransact({
+      to: smartContractAccountData.codeHash,
+      value: 0,
+    });
+  })
+  .then((res) => {
+    console.log("FOURTH POST_Transact RESPOSNE >>> ", res);
+    return getMine();
+  })
+  .then((res) => {
+    console.info("MINE_BLOCK_RESPONSE3 >>> ", res);
     return getAccountBalance();
   })
   .then((balance) => {

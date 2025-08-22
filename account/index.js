@@ -9,10 +9,22 @@ class Account {
   address;
   /**@type {number} */
   balance;
-  constructor() {
+  /**@type {string[]} */
+  code;
+  /**@type {string} */
+  codeHash;
+
+  constructor({ code } = {}) {
     this.keyPair = ec.genKeyPair();
     this.address = this.keyPair.getPublic().encode("hex");
     this.balance = STARTING_BALANCE;
+    this.code = code || [];
+    this.generateCodeHash();
+  }
+
+  generateCodeHash() {
+    this.codeHash =
+      this.code.length > 0 ? keccakHash(this.address + this.code) : null;
   }
 
   sign(data) {
@@ -20,10 +32,13 @@ class Account {
   }
 
   toJSON() {
-    const { address, balance } = this;
+    const { address, balance, code, codeHash } = this;
+
     return {
       address,
       balance,
+      code,
+      codeHash,
     };
   }
 

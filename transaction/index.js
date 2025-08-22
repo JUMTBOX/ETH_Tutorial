@@ -2,6 +2,7 @@ const { v4: uuid } = require("uuid");
 const Account = require("../account");
 const State = require("../store/state");
 const { MINING_REWARD } = require("../config");
+const InterPreter = require("../interpreter");
 
 /**
  * @readonly
@@ -229,6 +230,13 @@ class Transaction {
     const fromAccount = state.getAccount({ address: from });
     const toAccount = state.getAccount({ address: to });
 
+    if (!!toAccount.codeHash) {
+      const result = new InterPreter().runCode(toAccount.code);
+      console.info(
+        ` -*- Smart contract execution: ${transaction.id} - RESULT: ${result}`
+      );
+    }
+
     fromAccount.balance -= value;
     toAccount.balance += value;
 
@@ -241,9 +249,9 @@ class Transaction {
     const {
       data: { accountData },
     } = transaction;
-    const { address } = accountData;
+    const { address, codeHash } = accountData;
 
-    state.putAccout({ address, accountData });
+    state.putAccout({ address: !!codeHash ? codeHash : address, accountData });
   }
 
   /** @param {{transaction: Transaction, state: State}}  */
